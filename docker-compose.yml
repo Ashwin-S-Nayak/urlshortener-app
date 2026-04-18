@@ -1,0 +1,7 @@
+services:
+  frontend:
+    build: ./frontend
+    container_name: urlshortener-frontend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

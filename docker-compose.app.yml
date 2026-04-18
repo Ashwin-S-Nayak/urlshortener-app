@@ -1,0 +1,34 @@
+services:
+  backend:
+    image: ${DOCKER_USERNAME}/urlshortener-backend:latest
+    container_name: urlshortener-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://urlshortener-mongodb:27017/urlshortener
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=7d
+      - BASE_URL=${BASE_URL}
+    depends_on:
+      - urlshortener-mongodb
+    restart: unless-stopped
+    networks:
+      - urlshortener-network
+
+  urlshortener-mongodb:
+    image: mongo:6
+    container_name: urlshortener-mongodb
+    volumes:
+      - urlshortener-mongo-data:/data/db
+    restart: unless-stopped
+    networks:
+      - urlshortener-network
+
+networks:
+  urlshortener-network:
+    driver: bridge
+
+volumes:
+  urlshortener-mongo-data:
