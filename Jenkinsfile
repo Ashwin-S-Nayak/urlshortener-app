@@ -40,6 +40,9 @@ pipeline {
             steps {
                 echo '>>> STAGE 3: Running Jest tests against real MongoDB...'
                 sh '''
+                    docker stop test-mongodb-url 2>/dev/null || true
+                    docker rm -f test-mongodb-url 2>/dev/null || true
+                    docker network rm test-network-url 2>/dev/null || true
                     docker network create test-network-url 2>/dev/null || true
 
                     docker run -d \
