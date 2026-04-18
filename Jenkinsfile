@@ -177,7 +177,7 @@ pipeline {
 
                         echo '--- Checking end-to-end via Nginx on port 80 ---'
                         ssh -o StrictHostKeyChecking=no ec2-user@${PUBLIC_SERVER} \
-                            'curl -sf http://localhost/api/health'
+                            'curl -v http://localhost/api/health'
 
                         echo 'All verifications passed!'
                     """
