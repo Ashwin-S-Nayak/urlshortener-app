@@ -17,7 +17,10 @@ export default function Dashboard() {
 
   const loadAll = async () => {
     try {
-      const [urlRes, statRes] = await Promise.all([API.get('/api/urls'), API.get('/api/urls/stats')])
+      const [urlRes, statRes] = await Promise.all([
+        API.get('/api/urls'),
+        API.get('/api/urls/stats')
+      ])
       setUrls(urlRes.data.urls || [])
       setStats(statRes.data.stats || {})
     } catch (err) {
@@ -34,7 +37,7 @@ export default function Dashboard() {
     try {
       await API.post('/api/urls', form)
       setForm({originalUrl:'',customCode:''})
-      setSuccess('URL shortened!')
+      setSuccess('URL shortened successfully!')
       setTimeout(()=>setSuccess(''),3000)
       await loadAll()
     } catch (err) {
@@ -53,7 +56,21 @@ export default function Dashboard() {
   }
 
   const copyUrl = (url, id) => {
-    navigator.clipboard.writeText(url)
+    // Works on both HTTP and HTTPS
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url)
+    } else {
+      // Fallback for HTTP
+      const textarea = document.createElement('textarea')
+      textarea.value = url
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
     setCopied(id)
     setTimeout(()=>setCopied(''),2000)
   }
@@ -70,7 +87,11 @@ export default function Dashboard() {
 
       <div style={s.container}>
         <div style={s.statsRow}>
-          {[{label:'Total URLs',val:stats.totalUrls||0,icon:'🔗'},{label:'Total Clicks',val:stats.totalClicks||0,icon:'👆'},{label:'Top Link Clicks',val:stats.mostClickedCount||0,icon:'🏆'}].map(st=>(
+          {[
+            {label:'Total URLs',val:stats.totalUrls||0,icon:'🔗'},
+            {label:'Total Clicks',val:stats.totalClicks||0,icon:'👆'},
+            {label:'Top Link Clicks',val:stats.mostClickedCount||0,icon:'🏆'}
+          ].map(st=>(
             <div key={st.label} style={s.statCard}>
               <div style={s.statIcon}>{st.icon}</div>
               <div style={s.statVal}>{st.val}</div>
@@ -79,40 +100,93 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {error && <div style={s.errBanner}>❌ {error} <button style={s.dimBtn} onClick={()=>setError('')}>✕</button></div>}
+        {error && (
+          <div style={s.errBanner}>
+            ❌ {error}
+            <button style={s.dimBtn} onClick={()=>setError('')}>✕</button>
+          </div>
+        )}
         {success && <div style={s.sucBanner}>✅ {success}</div>}
 
         <div style={s.card}>
           <h2 style={s.cardTitle}>Shorten a URL</h2>
           <form onSubmit={addUrl}>
             <div style={s.formRow}>
-              <input style={{...s.input,flex:3}} type="url" placeholder="https://www.example.com/very/long/url..." value={form.originalUrl} onChange={e=>setForm({...form,originalUrl:e.target.value})}/>
-              <input style={{...s.input,flex:1}} type="text" placeholder="Custom code (optional)" value={form.customCode} onChange={e=>setForm({...form,customCode:e.target.value})} maxLength={20}/>
-              <button style={s.submitBtn} disabled={adding}>{adding?'Shortening...':'⚡ Shorten'}</button>
+              <input
+                style={{...s.input,flex:3}}
+                type="url"
+                placeholder="https://www.example.com/very/long/url..."
+                value={form.originalUrl}
+                onChange={e=>setForm({...form,originalUrl:e.target.value})}
+              />
+              <input
+                style={{...s.input,flex:1}}
+                type="text"
+                placeholder="Custom code (optional)"
+                value={form.customCode}
+                onChange={e=>setForm({...form,customCode:e.target.value})}
+                maxLength={20}
+              />
+              <button style={s.submitBtn} disabled={adding}>
+                {adding?'Shortening...':'⚡ Shorten'}
+              </button>
             </div>
           </form>
         </div>
 
         <div style={s.card}>
-          <h2 style={s.cardTitle}>Your URLs <span style={s.badge}>{urls.length}</span></h2>
+          <h2 style={s.cardTitle}>
+            Your URLs
+            <span style={s.badge}>{urls.length}</span>
+          </h2>
+
           {loading ? (
             <div style={s.empty}>Loading your URLs...</div>
           ) : urls.length === 0 ? (
-            <div style={s.empty}><div style={{fontSize:'48px',marginBottom:'12px'}}>🔗</div><p>No URLs yet. Shorten your first URL above!</p></div>
+            <div style={s.empty}>
+              <div style={{fontSize:'48px',marginBottom:'12px'}}>🔗</div>
+              <p>No URLs yet. Shorten your first URL above!</p>
+            </div>
           ) : (
             urls.map(url=>(
               <div key={url._id} style={s.urlCard}>
                 <div style={s.urlInfo}>
-                  <div style={s.shortUrl}>{url.shortUrl}</div>
-                  <div style={s.origUrl} title={url.originalUrl}>{url.originalUrl.length>70?url.originalUrl.substring(0,70)+'...':url.originalUrl}</div>
+                  
+                    href={url.shortUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={s.shortUrl}
+                    title="Click to open short URL"
+                  >
+                    {url.shortUrl}
+                  </a>
+                  <div style={s.origUrl} title={url.originalUrl}>
+                    {url.originalUrl.length>70
+                      ? url.originalUrl.substring(0,70)+'...'
+                      : url.originalUrl}
+                  </div>
                   <div style={s.meta}>
                     <span style={s.clickBadge}>👆 {url.clicks} clicks</span>
                     <span style={s.dateBadge}>📅 {new Date(url.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
                 <div style={s.actions}>
-                  <button style={{...s.actBtn,background:copied===url._id?'#059669':'#1e1e2e'}} onClick={()=>copyUrl(url.shortUrl,url._id)}>{copied===url._id?'✅ Copied!':'📋 Copy'}</button>
-                  <button style={{...s.actBtn,background:'#7f1d1d',color:'#fca5a5'}} onClick={()=>deleteUrl(url._id)}>🗑 Delete</button>
+                  <button
+                    style={{
+                      ...s.actBtn,
+                      background: copied===url._id ? '#059669' : '#1e1e2e',
+                      border: copied===url._id ? '1px solid #059669' : '1px solid #30363d'
+                    }}
+                    onClick={()=>copyUrl(url.shortUrl, url._id)}
+                  >
+                    {copied===url._id ? '✅ Copied!' : '📋 Copy'}
+                  </button>
+                  <button
+                    style={{...s.actBtn,background:'#7f1d1d',color:'#fca5a5',border:'1px solid #991b1b'}}
+                    onClick={()=>deleteUrl(url._id)}
+                  >
+                    🗑 Delete
+                  </button>
                 </div>
               </div>
             ))
@@ -148,11 +222,11 @@ const s = {
   empty:{textAlign:'center',padding:'48px',color:'#475569',fontSize:'14px'},
   urlCard:{display:'flex',alignItems:'center',gap:'16px',padding:'16px',background:'#0f0f17',borderRadius:'8px',marginBottom:'10px',border:'1px solid #1e1e2e'},
   urlInfo:{flex:1,minWidth:0},
-  shortUrl:{fontSize:'15px',fontWeight:'bold',color:'#a78bfa',marginBottom:'4px',wordBreak:'break-all'},
+  shortUrl:{fontSize:'15px',fontWeight:'bold',color:'#a78bfa',marginBottom:'4px',wordBreak:'break-all',display:'block',cursor:'pointer',textDecoration:'underline'},
   origUrl:{fontSize:'13px',color:'#64748b',marginBottom:'6px',wordBreak:'break-all'},
   meta:{display:'flex',gap:'12px',flexWrap:'wrap'},
   clickBadge:{fontSize:'12px',color:'#34d399',background:'rgba(5,150,105,0.1)',padding:'2px 8px',borderRadius:'4px'},
   dateBadge:{fontSize:'12px',color:'#64748b'},
   actions:{display:'flex',gap:'8px',flexWrap:'wrap'},
-  actBtn:{padding:'8px 14px',borderRadius:'6px',border:'none',cursor:'pointer',fontSize:'13px',color:'#e2e8f0',whiteSpace:'nowrap'}
+  actBtn:{padding:'8px 14px',borderRadius:'6px',cursor:'pointer',fontSize:'13px',color:'#e2e8f0',whiteSpace:'nowrap'}
 }
