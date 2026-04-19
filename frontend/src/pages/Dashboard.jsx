@@ -56,11 +56,9 @@ export default function Dashboard() {
   }
 
   const copyUrl = (url, id) => {
-    // Works on both HTTP and HTTPS
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(url)
     } else {
-      // Fallback for HTTP
       const textarea = document.createElement('textarea')
       textarea.value = url
       textarea.style.position = 'fixed'
@@ -152,6 +150,7 @@ export default function Dashboard() {
               <div key={url._id} style={s.urlCard}>
                 <div style={s.urlInfo}>
                   
+                  <a
                     href={url.shortUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -160,16 +159,19 @@ export default function Dashboard() {
                   >
                     {url.shortUrl}
                   </a>
+
                   <div style={s.origUrl} title={url.originalUrl}>
                     {url.originalUrl.length>70
                       ? url.originalUrl.substring(0,70)+'...'
                       : url.originalUrl}
                   </div>
+
                   <div style={s.meta}>
                     <span style={s.clickBadge}>👆 {url.clicks} clicks</span>
                     <span style={s.dateBadge}>📅 {new Date(url.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
+
                 <div style={s.actions}>
                   <button
                     style={{
